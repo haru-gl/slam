@@ -1,87 +1,92 @@
 ﻿#include "fd_main.h"
 #include "csv.h"
-
-
+#include "anms.h" // ★ 追加
 
 void featurepointdetection(featureDetectionType fd, source_data& srcd, destination_data& dstd)
 {
-    switch (fd.ft) {
-    case featureType::fAKAZE:
-    {                                           // なぜか中括弧で囲むとswitch case文内部でも変数宣言が可能になる．
-        akaze fdt_akaze;
-        fdt_akaze.featuredetection(fd, srcd, dstd);
-    }
-    //cv::Ptr<cv::AKAZE> detector = cv::AKAZE::create();
-    //akaze::set_parameters(detector);
-    ////akaze::set_parameters(detector);
-    break;
-    case featureType::fSURF:
-    {
-        surf fdt_surf;//Default Setting
-        fdt_surf.featuredetection(fd, srcd, dstd);
-    }
-    break;
+	// === 特徴点検出 (既存のコード) ===
+	switch (fd.ft) {
+	case featureType::fAKAZE:
+	{
+		akaze fdt_akaze;
+		fdt_akaze.featuredetection(fd, srcd, dstd);
+	}
+	break;
+	case featureType::fSURF:
+	{
+		surf fdt_surf;
+		fdt_surf.featuredetection(fd, srcd, dstd);
+	}
+	break;
 	case featureType::fSIFT:
 	{
-		sift fdt_sift;//Default Setting
+		sift fdt_sift;
 		fdt_sift.featuredetection(fd, srcd, dstd);
 	}
 	break;
-    case featureType::fORB:
-    {
-        orb fdt_orb;//Default Setting
-        fdt_orb.featuredetection(fd, srcd, dstd);
-    }
-    break;
+	case featureType::fORB:
+	{
+		orb fdt_orb;
+		fdt_orb.featuredetection(fd, srcd, dstd);
+	}
+	break;
 	case featureType::fBRISK:
 	{
-		brisk fdt_brisk;//Default Setting
+		brisk fdt_brisk;
 		fdt_brisk.featuredetection(fd, srcd, dstd);
 	}
 	break;
 	case featureType::fPCA_float:
 	case featureType::fPCA_uschar:
-	{
-		pca fdt_pca;//Default Setting
-		fdt_pca.featuredetection(fd, srcd, dstd);
-	}
-	break;
 	case featureType::fPCA_16bin:
 	{
 		pca fdt_pca;
 		fdt_pca.featuredetection(fd, srcd, dstd);
 	}
 	break;
-    default:
-        error_log("[%s]:[%s] そのfeatureTypeは実装されていません．\n", __FILE__, __FUNCTION__);
-        exit(EXIT_FAILURE);
-    }
+	default:
+		error_log("[%s]:[%s] そのfeatureTypeは実装されていません．\n", __FILE__, __FUNCTION__);
+		exit(EXIT_FAILURE);
+	}
+
+	// ★ 変更: USE_ANMSがtrueのときだけANMS処理が実行されるようにする ★
+#if USE_ANMS
+	const int ANMS_POINTS = 1500; // ANMSで残したい特徴点の数
+
+	// source_data (地図側) に適用 (初回実行時のみ)
+	if (!srcd.oImage_dummy) {
+		printf("Applying ANMS to source_data...\n");
+		progress_log("  - Before ANMS (srcd): %zu points\n", srcd.oPts.size());
+		applyAnms(srcd.oPts, srcd.oFeatures, ANMS_POINTS);
+		progress_log("  - After ANMS (srcd): %zu points\n", srcd.oPts.size());
+	}
+
+	// destination_data (カメラ側) に適用
+	printf("Applying ANMS to destination_data...\n");
+	progress_log("  - Before ANMS (dstd): %zu points\n", dstd.oPts.size());
+	applyAnms(dstd.oPts, dstd.oFeatures, ANMS_POINTS);
+	progress_log("  - After ANMS (dstd): %zu points\n", dstd.oPts.size());
+#else
+	printf("ANMS is disabled. Skipping.\n");
+#endif
+	// ★ 変更ここまで ★
 
 	if (CV_KEYPOINT_DSTD_TO_CSV) {
 		CSVHandler csv("./featurepoints_dstd.csv");
 
 		for (int i = 0; i < dstd.oPts.size(); i++) {
-			csv.setValue(std::to_string(i), "x",		  std::to_string(dstd.oPts[i].pt.x));
-			csv.setValue(std::to_string(i), "y",		  std::to_string(dstd.oPts[i].pt.y));
-			csv.setValue(std::to_string(i), "size",	  std::to_string(dstd.oPts[i].size));
-			csv.setValue(std::to_string(i), "angle",	  std::to_string(dstd.oPts[i].angle));
-			csv.setValue(std::to_string(i), "response",  std::to_string(dstd.oPts[i].response));
-			csv.setValue(std::to_string(i), "octave",	  std::to_string(dstd.oPts[i].octave));
-			csv.setValue(std::to_string(i), "class_id",  std::to_string(dstd.oPts[i].class_id));
+			csv.setValue(std::to_string(i), "x", std::to_string(dstd.oPts[i].pt.x));
+			csv.setValue(std::to_string(i), "y", std::to_string(dstd.oPts[i].pt.y));
+			csv.setValue(std::to_string(i), "size", std::to_string(dstd.oPts[i].size));
+			csv.setValue(std::to_string(i), "angle", std::to_string(dstd.oPts[i].angle));
+			csv.setValue(std::to_string(i), "response", std::to_string(dstd.oPts[i].response));
+			csv.setValue(std::to_string(i), "octave", std::to_string(dstd.oPts[i].octave));
+			csv.setValue(std::to_string(i), "class_id", std::to_string(dstd.oPts[i].class_id));
 		}
-		
+
 		csv.saveChanges();
 	}
-	
 }
-
-//// KeyPoint.sizeによる絞り込みを実行する関数は，テンプレート関数なので，ヘッダに定義まで書いた．
-//template<typename T>
-//void sq_size(T& srcdst) 
-//{
-//	
-//}
-
 
 
 

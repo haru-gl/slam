@@ -3,9 +3,6 @@
 #include "classes.h"
 #include "enclasses.h"
 #include "knn.h"
-#include "classes.h"    // For clipedmap_data, target_data
-#include "enclasses.h"  // For knnType enum
-#include "flann_lsh_matcher.h"
 
 
 void matrow_swap(cv::Mat& des, int i, int j)
@@ -87,7 +84,7 @@ size_t knn::match(featureType ft, knnType kt, source_data& srcd, destination_dat
 	case featureType::fSURF:
 	case featureType::fSIFT:
 	case featureType::fPCA_float:
-		if (use_flann) flann_matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED); 
+		if (use_flann) flann_matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 		else           matcher = cv::BFMatcher(cv::NORM_L2, isCrossCheck);
 		break;
 	case featureType::fPCA_16bin:
@@ -98,10 +95,10 @@ size_t knn::match(featureType ft, knnType kt, source_data& srcd, destination_dat
 		exit(EXIT_FAILURE);
 		break;
 	}
-	
+
 	std::vector<std::vector<cv::DMatch>> nn_matches;
 	std::vector<std::vector<cv::DMatch>> good_matches;
-	
+
 	if (use_flann) flann_matcher->knnMatch(dstd.oFeatures, srcd.oFeatures, nn_matches, knn_k);
 	else           matcher.knnMatch(dstd.oFeatures, srcd.oFeatures, nn_matches, knn_k);
 	//								tgt							cmp
@@ -115,13 +112,6 @@ size_t knn::match(featureType ft, knnType kt, source_data& srcd, destination_dat
 		cv::imshow("[k-NN]match_img_init", match_img_init);
 		cv::waitKey(1);
 	}
-
-
-
-
-
-
-
 
 	size_t goodPairsNum = 0;
 	size_t candnum = 0;

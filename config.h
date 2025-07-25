@@ -25,17 +25,17 @@ std::string RootPath = "C:/JAXA_database/FeatureMapping/";
 #endif // APPLE
 
 
-std::string DistNum = "dist[400]_seed[0]/";
+std::string DistNum = "dist[407]_seed[0]/";
 //std::string DistNum = "400/";
 
 
 // ==================== Shared Settings ========================
-featureType FT_SHARED = featureType::fPCA_16bin; // fPCA_16bin ←16B 記述子を使用
+featureType FT_SHARED = featureType::fAKAZE; // fPCA_16bin ←16B 記述子を使用
 // =============================================================
 
 // RANSAC  (使うものだけTrueにすること)
-#define RANSAC_NORMAL true	
-#define RANSAC_grfl   false
+#define RANSAC_NORMAL false
+#define RANSAC_grfl   true
 
 
 // 変更不要

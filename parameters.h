@@ -6,6 +6,8 @@
 #define IS_INFO		false		// info_log
 #define IS_DEBUG	false		// debug_log
 
+#define USE_ANMS true   // trueにするとANMS（特徴点の均一化）が有効
+
 #define IS_IMSHOW false			// 全体スイッチ（個別スイッチが有効だと，それは優先される）
 #define IS_IMSHOW_FMP true		// 個別スイッチ
 #define IS_IMSHOW_SAC false		// 個別スイッチ
@@ -30,8 +32,9 @@
 
 
 // Setting of sq_size,response  sqTypeの設定により意味は変化する．（割合または絶対個数）
-#define SQ_SIZE_TH 0.4
-#define SQ_RESPONSE_TH 0.6
+//AKAZE の場合，< 0.2, 0.7 >，SURF の場合< 0.3, 0.6 >
+#define SQ_SIZE_TH 0.2
+#define SQ_RESPONSE_TH 0.7
 
 #define SQ_SIZE_ROUND_DPN 16			// size値で小数点以下を刻んでくる場合に，何桁目までで四捨五入して同一視するか
 #define SQ_RESPONSE_ROUND_DPN 16
@@ -82,7 +85,7 @@
 
 //Setting of k-NN Method
 #define INIT_KNNK 2
-#define INIT_NNMATCHRATIO 0.99//0.84//0.93
+#define INIT_NNMATCHRATIO 0.90//0.84//0.93
 #define INIT_DISTTH 3.0
 #define INIT_MAXNUM 200
 #define INIT_SAMEPOINT 0.5
