@@ -1,4 +1,4 @@
-﻿#include "fd_main.h"
+#include "fd_main.h"
 #include "csv.h"
 #include "anms.h" // ★ 追加
 
@@ -51,20 +51,21 @@ void featurepointdetection(featureDetectionType fd, source_data& srcd, destinati
 
 	// ★ 変更: USE_ANMSがtrueのときだけANMS処理が実行されるようにする ★
 #if USE_ANMS
-	const int ANMS_POINTS = 1500; // ANMSで残したい特徴点の数
+	const int ANMS_POINTS = 500; // ANMSで残したい特徴点の数 //250 100
+	const float ANMS_MULTIPLIER = 2.0f; // ANMSの中間ステップで保持する点の倍率
 
 	// source_data (地図側) に適用 (初回実行時のみ)
 	if (!srcd.oImage_dummy) {
 		printf("Applying ANMS to source_data...\n");
 		progress_log("  - Before ANMS (srcd): %zu points\n", srcd.oPts.size());
-		applyAnms(srcd.oPts, srcd.oFeatures, ANMS_POINTS);
+		applyAnms(srcd.oPts, srcd.oFeatures, ANMS_POINTS, ANMS_MULTIPLIER);
 		progress_log("  - After ANMS (srcd): %zu points\n", srcd.oPts.size());
 	}
 
 	// destination_data (カメラ側) に適用
 	printf("Applying ANMS to destination_data...\n");
 	progress_log("  - Before ANMS (dstd): %zu points\n", dstd.oPts.size());
-	applyAnms(dstd.oPts, dstd.oFeatures, ANMS_POINTS);
+	applyAnms(dstd.oPts, dstd.oFeatures, ANMS_POINTS, ANMS_MULTIPLIER);
 	progress_log("  - After ANMS (dstd): %zu points\n", dstd.oPts.size());
 #else
 	printf("ANMS is disabled. Skipping.\n");
@@ -92,9 +93,9 @@ void featurepointdetection(featureDetectionType fd, source_data& srcd, destinati
 
 
 void sort_oc(const std::vector<double> src,			// 入力
-			 std::vector<double>& order,		    // 出力1
-			 std::vector<int>& count, 				// 出力2
-			 sort_order_list sort_order)			// 設定項目（どの順番で並べるか）
+	std::vector<double>& order,		    // 出力1
+	std::vector<int>& count, 				// 出力2
+	sort_order_list sort_order)			// 設定項目（どの順番で並べるか）
 {
 	// 入力配列のもつ値が，小さい順に入る．（重複はしない！）ex: [1,3,4,9, 15,30, 99]など．
 	order.clear();	order.push_back(DBL_MAX);
@@ -156,10 +157,10 @@ void sort_oc(const std::vector<double> src,			// 入力
 
 //// KeyPointのsize，responseによる絞り込みのためのマスク配列を生成する関数
 void sq_make_list(sr sr, double th, int round_dpn,
-				  std::vector<cv::KeyPoint> oPts, cv::Mat oFeatures, std::string name, featureDetectionType fd,
-				  std::vector<bool>& mask)
+	std::vector<cv::KeyPoint> oPts, cv::Mat oFeatures, std::string name, featureDetectionType fd,
+	std::vector<bool>& mask)
 {
-	
+
 	switch (sr)
 	{
 	case sr::size:
@@ -173,24 +174,24 @@ void sq_make_list(sr sr, double th, int round_dpn,
 	}
 
 	// 割合で絞り込むモードの場合のエラー検出
-	if (fd.st==sqType::sqPERCENT) {
+	if (fd.st == sqType::sqPERCENT) {
 		if (th == 1.0) return;	// 絞り込みを行わないのと同義（1.0 === 全通過のため）
 		else if (th < 0 || 1.0 < th) {
-			printf("[fd_main.cpp] Error! 「sqType::sqPERCENT」モードの場合，SQ_{SIZE, RESPONSE}_THの値は次の範囲で有効です： 0.0 < SQ_{SIZE, RESPONSE}_TH <= 1.0\n"); 
+			printf("[fd_main.cpp] Error! 「sqType::sqPERCENT」モードの場合，SQ_{SIZE, RESPONSE}_THの値は次の範囲で有効です： 0.0 < SQ_{SIZE, RESPONSE}_TH <= 1.0\n");
 			exit(EXIT_FAILURE);
 		}
-	}	
+	}
 	// 個数で絞り込むモードの場合のエラー検出
 	if (fd.st == sqType::sqNUM) {
 		if (th <= 1.0) {		// 閾値が1.0以下の場合 --> 設定ミスの可能性が大きいのでエラーで終了
 			printf("[fd_main.cpp] Error! SQ_{SIZE, RESPONSE}_THの設定値が小さすぎます．\n");
 			exit(EXIT_FAILURE);
 		}
-	}	
+	}
 
 
 	int  start_size = oPts.size();	// 削減前の特徴点数
-	int  end_size = -1;				// 削減後の特徴点数 
+	int  end_size = -1;				// 削減後の特徴点数
 
 
 
@@ -228,7 +229,7 @@ void sq_make_list(sr sr, double th, int round_dpn,
 
 
 	double max_size, min_size;
-	switch (sr==sr::size? fd.sq_size_sl: fd.sq_response_sl)
+	switch (sr == sr::size ? fd.sq_size_sl : fd.sq_response_sl)
 	{
 	case sl::small_is_better:
 		sort_oc(pts, little_order, little_count, sort_order_list::small2large);
@@ -250,7 +251,7 @@ void sq_make_list(sr sr, double th, int round_dpn,
 	//double min_size = *std::min_element(pts_size.begin(), pts_size.end());		// #include <algorithm>
 
 
-	
+
 
 	switch (sr)
 	{
@@ -340,7 +341,7 @@ void sq_make_list(sr sr, double th, int round_dpn,
 	default:
 		break;
 	}
-	
+
 
 
 	int itr = 0;
@@ -367,7 +368,7 @@ void sq_make_list(sr sr, double th, int round_dpn,
 		{
 			mask[i] = false;	// 残留させるべき特徴点ではないので，falseへ変更．
 		}
-		
+
 	}
 	end_size = itr;
 
@@ -378,11 +379,11 @@ void sq_make_list(sr sr, double th, int round_dpn,
 
 
 void sq(std::vector<cv::KeyPoint>& oPts, cv::Mat& oFeatures, std::string name, featureDetectionType fd,
-		std::vector<bool> mask)
+	std::vector<bool> mask)
 {
 	std::cout << "----- 絞り込み開始 -----" << std::endl;
 	int  start_size = oPts.size();	// 削減前の特徴点数
-	int  end_size = -1;				// 削減後の特徴点数 
+	int  end_size = -1;				// 削減後の特徴点数
 
 	std::vector<cv::KeyPoint> newoPts(oPts.size());
 	cv::Mat newoFeatures = oFeatures.clone();		// 今仮に書き込んでいるが，それはサイズを合わせるため．newoFeaturesの中身は現時点で全消去可であり，のちに上書きされていく．
@@ -398,7 +399,7 @@ void sq(std::vector<cv::KeyPoint>& oPts, cv::Mat& oFeatures, std::string name, f
 
 			// 特徴量のコピー
 			for (int col = 0; col < oFeatures.cols; col++) {
-				copy2features(fd, newoFeatures, oFeatures, itr, col, i, col); //newoFeatures.at<unsigned char>(itr, col) = srcdst.oFeatures.at<unsigned char>(i, col);				
+				copy2features(fd, newoFeatures, oFeatures, itr, col, i, col); //newoFeatures.at<unsigned char>(itr, col) = srcdst.oFeatures.at<unsigned char>(i, col);
 			}
 			itr++;
 		}
